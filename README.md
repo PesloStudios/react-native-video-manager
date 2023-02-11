@@ -6,6 +6,8 @@ Module cross platform to merge multiple videos.
 
 This tool based on [`react-native-video-editor`](https://www.npmjs.com/package/react-native-video-editor), with working example, support to newer React Native versions, and more improvements.
 
+**Temporary note**: This fork is being migrated to support Swift & Kotlin, and updated to support new functionality. Android is not yet at feature parity with iOS, and therefore it may not function as expected. Once feature parity has been reached, we'll look to contribute the changes here back to the community ✨
+
 ## Installation
 
 ```sh
@@ -47,6 +49,27 @@ try {
 ```
 
 You can also check a complete example in `/example` folder.
+
+## New changes!
+
+### iOS
+
+- Migrated all native code to use Swift, with a single obj-c file to bridge across.
+- Updated incoming data models to map to Swift `struct`s for better typing & handling of data
+- Updated outgoing data models to map from Swift `struct`s for better typing & handling of data
+- Added `getTotalDurationFor(video: string)` function - this takes a video path and returns the duration of it, in seconds.
+- Updated `merge(videos: string[])` to support options:
+  - `writeDirectory`: `string` - rather than always writing to documents, this allows the implementing app to provide a different location (i.e., cache directory). Use `react-native-fs` or an equivalent library to find & construct these directories.
+  - `fileName`: `string` - rather than using the same file name, this allows the implementing app to provide a different / unique file name.
+  - `ignoreSound`: `boolean` - for when you know your videos will not have an audio track, setting this allows the merge logic to operate - ignoring any audio.
+    - Note: I may remove this, and instead update the logic to automatically handle this.
+  - `actionKey`: `string` - setting this allows progress events to be emitted to JS. If multiple merge operations have been requested in a batch, this allows the progress to be matched to a given video
+  - All options (where replacing a previous hardcoded value) use the old value as a fallback, if options is not provided
+- Updated `merge(videos: string[])` to support returning `duration` alongside the `uri`.
+
+### Android
+
+Nothing yet - our project has a sole iOS focus for the initial launch. But, Android is on the way!
 
 ## Contributing
 
