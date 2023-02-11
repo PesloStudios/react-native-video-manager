@@ -67,6 +67,12 @@ You can also check a complete example in `/example` folder.
   - All options (where replacing a previous hardcoded value) use the old value as a fallback, if options is not provided
 - Updated `merge(videos: string[])` to support returning `duration` alongside the `uri`.
 
+Still in progress:
+
+- Tidying up new Swift code
+- Ensuring `VideoManagerError`s thrown throughout have detailed error messages that are surfaced to JS
+- Use of turbo-modules?
+
 ### Android
 
 Nothing yet - our project has a sole iOS focus for the initial launch. But, Android is on the way!
