@@ -1,12 +1,36 @@
 import Foundation
 import AVFoundation
 
-internal struct GetTotalDuration: Codable {
+internal struct GetTotalDuration {
     let duration: Double
 
     func asDictionary() -> [AnyHashable: Any] {
         [
             "duration": duration
+        ]
+    }
+}
+
+internal struct MergeVideoProgress {
+    let key: String
+    let progress: Float
+
+    func asDictionary() -> [AnyHashable: Any] {
+        [
+            "key": key,
+            "progress": NSNumber(value: progress)
+        ]
+    }
+}
+
+internal struct MergeVideoResults {
+    let path: String
+    let duration: CGFloat
+
+    func asDictionary() -> [AnyHashable: Any] {
+        [
+            "uri": "file://\(path)",
+            "duration": NSNumber(value: duration)
         ]
     }
 }
@@ -18,6 +42,23 @@ internal enum VideoManagerError: LocalizedError {
     case mergeVideoError(error: String?)
     case mergeVideoCancelled
     case selfNotAvailable
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidMergeOptions:
+            return "Options were provided to merge(...), but an option did not match expected types / availability"
+        case .missingVideo(let fileName):
+            return "Video with name \(fileName) is missing a video track"
+        case .missingAudio(let fileName):
+            return "Video with name \(fileName) is missing an audio track"
+        case .mergeVideoError(let error):
+            return "When merging videos, an error has occurred: \(error ?? "unknown error")"
+        case .mergeVideoCancelled:
+            return "The merge operation was cancelled"
+        default:
+            return "An unexpected errror has occurred"
+        }
+    }
 }
 
 internal struct MergeVideoOptions: Codable {
@@ -187,21 +228,13 @@ class RNVideoManager: RCTEventEmitter {
                 throw VideoManagerError.mergeVideoCancelled
             case .exporting:
                 if (self.hasListeners) {
-                    let results: [AnyHashable: Any] = [
-                        "key": options.actionKey,
-                        "progress": NSNumber(value: exporter.progress)
-                    ]
-
-                    self.sendEvent(withName: "VideoManager-MergeProgress", body: results)
+                    let results = MergeVideoProgress(key: options.actionKey, progress: exporter.progress)
+                    self.sendEvent(withName: "VideoManager-MergeProgress", body: results.asDictionary())
                 }
                 break
             case .completed:
-                let results: [String: AnyHashable] = [
-                    "uri": "file://\(path)",
-                    "duration": NSNumber(value: duration)
-                ]
                 NSLog("Completed a video merge \(path)")
-                resolve(results)
+                resolve(MergeVideoResults(path: path, duration: duration).asDictionary())
                 break;
             default:
                 break;
