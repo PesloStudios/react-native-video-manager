@@ -97,7 +97,10 @@ internal struct MergeVideoOptions: Codable {
 
 @objc(RNVideoManager)
 class RNVideoManager: RCTEventEmitter {
-    var hasListeners: Bool = false
+    private var hasListeners: Bool = false
+    private var timers = [String: Timer]()
+
+    private static let timerInvalidationStatuses: [AVAssetExportSession.Status] = [.cancelled, .failed, .completed]
 
     override class func requiresMainQueueSetup() -> Bool {
         true
@@ -197,6 +200,15 @@ class RNVideoManager: RCTEventEmitter {
             exporter.outputURL = writeURL
             exporter.outputFileType = .mp4
 
+            DispatchQueue.main.async { [weak self] in
+                let exportProgressBarTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+                    self?.onTimerFiredFor(timer, exporter: exporter, actionKey: mergeOptions.actionKey)
+                }
+
+                RunLoop.current.add(exportProgressBarTimer, forMode: .common)
+                self?.timers[mergeOptions.actionKey] = exportProgressBarTimer
+            }
+
             exporter.exportAsynchronously { [weak self] in
                 guard let self = self else {
                     reject("event_failure", "an error unknown occurred", nil)
@@ -209,6 +221,31 @@ class RNVideoManager: RCTEventEmitter {
             reject("event_failure", "an error occurred - \(error.localizedDescription)", nil)
         } catch {
             reject("event_failure", "an error unknown occurred", nil)
+        }
+    }
+
+    private func onTimerFiredFor(_ timer: Timer, exporter: AVAssetExportSession, actionKey: String) {
+        guard !RNVideoManager.timerInvalidationStatuses.contains(exporter.status) else {
+            timer.invalidate()
+            self.timers[actionKey] = nil
+            return
+        }
+
+        let progress = exporter.progress
+
+        guard progress != 0 else {
+            return
+        }
+
+        guard progress < 0.99 else {
+            timer.invalidate()
+            self.timers[actionKey] = nil
+            return
+        }
+
+        if (self.hasListeners) {
+            let results = MergeVideoProgress(key: actionKey, progress: progress)
+            self.sendEvent(withName: "VideoManager-MergeProgress", body: results.asDictionary())
         }
     }
 
@@ -226,12 +263,6 @@ class RNVideoManager: RCTEventEmitter {
                 throw VideoManagerError.mergeVideoError(error: exporter.error?.localizedDescription)
             case .cancelled:
                 throw VideoManagerError.mergeVideoCancelled
-            case .exporting:
-                if (self.hasListeners) {
-                    let results = MergeVideoProgress(key: options.actionKey, progress: exporter.progress)
-                    self.sendEvent(withName: "VideoManager-MergeProgress", body: results.asDictionary())
-                }
-                break
             case .completed:
                 NSLog("Completed a video merge \(path)")
                 resolve(MergeVideoResults(path: path, duration: duration).asDictionary())
@@ -246,3 +277,4 @@ class RNVideoManager: RCTEventEmitter {
         }
     }
 }
+
