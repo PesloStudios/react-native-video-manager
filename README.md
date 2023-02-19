@@ -57,7 +57,7 @@ You can also check a complete example in `/example` folder.
 - Migrated all native code to use Swift, with a single obj-c file to bridge across.
 - Updated incoming data models to map to Swift `struct`s for better typing & handling of data
 - Updated outgoing data models to map from Swift `struct`s for better typing & handling of data
-- Added `getTotalDurationFor(video: string)` function - this takes a video path and returns the duration of it, in seconds.
+- Added `getDurationOf(video: string)` function - this takes a video path and returns the duration of it, in seconds.
 - Added `generateThumbnailFor(video: string, options: ThumbnailOptions)` function - this takes a video path (and options) and generates a `.png` thumbnail at a given point from that video:
   - `writeDirectory`: `string` - allows the implementing app to provide a write location. Use `react-native-fs` or an equivalent library to find & construct these directories.
   - `fileName`: `string` - the name of the thumbnail. This should not include the file extension.
