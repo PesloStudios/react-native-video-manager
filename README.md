@@ -58,6 +58,10 @@ You can also check a complete example in `/example` folder.
 - Updated incoming data models to map to Swift `struct`s for better typing & handling of data
 - Updated outgoing data models to map from Swift `struct`s for better typing & handling of data
 - Added `getTotalDurationFor(video: string)` function - this takes a video path and returns the duration of it, in seconds.
+- Added `generateThumbnailFor(video: string, options: ThumbnailOptions)` function - this takes a video path (and options) and generates a `.png` thumbnail at a given point from that video:
+  - `writeDirectory`: `string` - allows the implementing app to provide a write location. Use `react-native-fs` or an equivalent library to find & construct these directories.
+  - `fileName`: `string` - the name of the thumbnail. This should not include the file extension.
+  - `timestamp`: `number` - the point in the video to collect the thumbnail at.
 - Updated `merge(videos: string[])` to support options:
   - `writeDirectory`: `string` - rather than always writing to documents, this allows the implementing app to provide a different location (i.e., cache directory). Use `react-native-fs` or an equivalent library to find & construct these directories.
   - `fileName`: `string` - rather than using the same file name, this allows the implementing app to provide a different / unique file name.
