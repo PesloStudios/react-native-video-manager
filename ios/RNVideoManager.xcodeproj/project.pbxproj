@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		98AED92029A17FF500C83290 /* ThumbnailGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98AED91D29A17FF500C83290 /* ThumbnailGenerator.swift */; };
+		98AED92129A17FF500C83290 /* DurationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98AED91E29A17FF500C83290 /* DurationGenerator.swift */; };
+		98AED92229A17FF500C83290 /* MergedVideoGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98AED91F29A17FF500C83290 /* MergedVideoGenerator.swift */; };
 		98B7C7852997BF3C00017DAC /* RNVideoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B7C7832997BF3C00017DAC /* RNVideoManager.swift */; };
 		B3E7B58A1CC2AC0600A0062D /* RNVideoManager.m in Sources */ = {isa = PBXBuildFile; fileRef = B3E7B5891CC2AC0600A0062D /* RNVideoManager.m */; };
 /* End PBXBuildFile section */
@@ -25,6 +28,9 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libRNVideoManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNVideoManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		98AED91D29A17FF500C83290 /* ThumbnailGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ThumbnailGenerator.swift; sourceTree = "<group>"; };
+		98AED91E29A17FF500C83290 /* DurationGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DurationGenerator.swift; sourceTree = "<group>"; };
+		98AED91F29A17FF500C83290 /* MergedVideoGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MergedVideoGenerator.swift; sourceTree = "<group>"; };
 		98B7C7812997BF3C00017DAC /* RNVideoManager-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RNVideoManager-Bridging-Header.h"; sourceTree = "<group>"; };
 		98B7C7832997BF3C00017DAC /* RNVideoManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RNVideoManager.swift; sourceTree = "<group>"; };
 		B3E7B5891CC2AC0600A0062D /* RNVideoManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNVideoManager.m; sourceTree = "<group>"; };
@@ -53,6 +59,9 @@
 			isa = PBXGroup;
 			children = (
 				98B7C7832997BF3C00017DAC /* RNVideoManager.swift */,
+				98AED91E29A17FF500C83290 /* DurationGenerator.swift */,
+				98AED91F29A17FF500C83290 /* MergedVideoGenerator.swift */,
+				98AED91D29A17FF500C83290 /* ThumbnailGenerator.swift */,
 				B3E7B5891CC2AC0600A0062D /* RNVideoManager.m */,
 				134814211AA4EA7D00B7C361 /* Products */,
 				98B7C7812997BF3C00017DAC /* RNVideoManager-Bridging-Header.h */,
@@ -119,6 +128,9 @@
 			files = (
 				B3E7B58A1CC2AC0600A0062D /* RNVideoManager.m in Sources */,
 				98B7C7852997BF3C00017DAC /* RNVideoManager.swift in Sources */,
+				98AED92229A17FF500C83290 /* MergedVideoGenerator.swift in Sources */,
+				98AED92029A17FF500C83290 /* ThumbnailGenerator.swift in Sources */,
+				98AED92129A17FF500C83290 /* DurationGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,6 +221,7 @@
 					"$(SRCROOT)/../../../React/**",
 					"$(SRCROOT)/../../react-native/React/**",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = "-ObjC";
@@ -230,6 +243,7 @@
 					"$(SRCROOT)/../../../React/**",
 					"$(SRCROOT)/../../react-native/React/**",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = "-ObjC";

@@ -17,5 +17,10 @@ RCT_EXTERN_METHOD(merge:(NSArray *)fileNames
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject);
 
+RCT_EXTERN_METHOD(generateThumbnailFor:(NSString *)fileName
+                  options:(NSDictionary *)options
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject);
+
 @end
 

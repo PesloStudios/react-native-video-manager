@@ -11,14 +11,24 @@ interface DurationResponse {
   duration: number;
 }
 
-interface Options {
+interface ThumbnailResponse {
+  uri: string
+}
+
+interface MergeOptions {
   writeDirectory?: string;
   fileName?: string;
   ignoreSound?: boolean
   actionKey?: string;
 }
 
-export async function merge(videos: string[], options?: Options): Promise<MergeResponse> {
+interface ThumbnailOptions {
+  writeDirectory: string;
+  fileName: string;
+  timestamp: number;
+}
+
+export async function merge(videos: string[], options?: MergeOptions): Promise<MergeResponse> {
   const {uri, duration}: { uri: string, duration: number } = await RNVideoManager.merge(videos, options);
 
   return { uri, duration };
@@ -28,4 +38,10 @@ export async function getTotalDurationFor(video: string): Promise<DurationRespon
   const { duration }: DurationResponse = await RNVideoManager.getTotalDurationFor(video);
 
   return { duration }
+}
+
+export async function generateThumbnailFor(video: string, options: ThumbnailOptions): Promise<ThumbnailResponse> {
+  const { uri }: ThumbnailResponse = await RNVideoManager.generateThumbnailFor(video, options);
+
+  return { uri }
 }
