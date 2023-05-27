@@ -9,6 +9,7 @@ interface MergeResponse {
 
 interface DurationResponse {
   duration: number;
+  playable: boolean;
 }
 
 interface ThumbnailResponse {
@@ -35,9 +36,9 @@ export async function merge(videos: string[], options?: MergeOptions): Promise<M
 }
 
 export async function getDurationOf(video: string): Promise<DurationResponse> {
-  const { duration }: DurationResponse = await RNVideoManager.getDurationOf(video);
+  const { duration, playable }: DurationResponse = await RNVideoManager.getTotalDurationFor(video);
 
-  return { duration }
+  return { duration, playable }
 }
 
 export async function generateThumbnailFor(video: string, options: ThumbnailOptions): Promise<ThumbnailResponse> {
