@@ -8,7 +8,7 @@
 
 @interface RCT_EXTERN_MODULE(RNVideoManager, RCTEventEmitter)
 
-RCT_EXTERN_METHOD(getDurationOf:(NSString *)fileName
+RCT_EXTERN_METHOD(getDurationFor:(NSString *)fileName
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject);
 

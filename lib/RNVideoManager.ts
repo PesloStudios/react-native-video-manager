@@ -35,8 +35,8 @@ export async function merge(videos: string[], options?: MergeOptions): Promise<M
   return { uri, duration };
 }
 
-export async function getDurationOf(video: string): Promise<DurationResponse> {
-  const { duration, playable }: DurationResponse = await RNVideoManager.getTotalDurationFor(video);
+export async function getDurationFor(video: string): Promise<DurationResponse> {
+  const { duration, playable }: DurationResponse = await RNVideoManager.getDurationFor(video);
 
   return { duration, playable }
 }

@@ -23,8 +23,8 @@ class RNVideoManager: RCTEventEmitter {
         mergedVideoGenerator.hasListeners = false
     }
 
-    @objc(getDurationOf:resolver:rejecter:)
-    func getDurationOf(
+    @objc(getDurationFor:resolver:rejecter:)
+    func getDurationFor(
         fileName: String,
         resolve: RCTPromiseResolveBlock,
         reject: RCTPromiseRejectBlock
