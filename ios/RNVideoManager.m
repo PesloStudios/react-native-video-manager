@@ -22,5 +22,9 @@ RCT_EXTERN_METHOD(generateThumbnailFor:(NSString *)fileName
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject);
 
+RCT_EXTERN_METHOD(getVideoMetadataFor:(NSArray *)fileNames
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject);
+
 @end
 

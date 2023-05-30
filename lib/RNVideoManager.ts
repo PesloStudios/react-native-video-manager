@@ -12,6 +12,8 @@ interface DurationResponse {
   playable: boolean;
 }
 
+type MetadataResponse = Record<string, DurationResponse>
+
 interface ThumbnailResponse {
   uri: string
 }
@@ -39,6 +41,12 @@ export async function getDurationFor(video: string): Promise<DurationResponse> {
   const { duration, playable }: DurationResponse = await RNVideoManager.getDurationFor(video);
 
   return { duration, playable }
+}
+
+export async function getVideoMetadataFor(videos: string[]): Promise<MetadataResponse> {
+  const result: MetadataResponse = await RNVideoManager.getVideoMetadataFor(videos);
+
+  return result
 }
 
 export async function generateThumbnailFor(video: string, options: ThumbnailOptions): Promise<ThumbnailResponse> {
