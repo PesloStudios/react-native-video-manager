@@ -49,18 +49,33 @@ internal struct DurationGenerator {
     }
 
     internal func getMetadata(for fileNames: [String]) -> GetMetadataResult {
-        var videoMetadata: [String: VideoMetadata] = [:]
+        let result = getMetadataOnBackgroundThread(for: fileNames)
 
-        fileNames.forEach({ fileName in
-            let asset = AVAsset(url: URL(fileURLWithPath: fileName))
-            let duration = CMTimeGetSeconds(asset.duration)
+        guard let result = result else {
+            return GetMetadataResult(result: [:])
+        }
 
-            videoMetadata[fileName] = VideoMetadata(
-                duration: duration,
-                playable: asset.isPlayable
-            )
-        })
+        return result
+    }
 
-        return GetMetadataResult(result: videoMetadata)
+    private func getMetadataOnBackgroundThread(for fileNames: [String]) -> GetMetadataResult? {
+        var result: GetMetadataResult? = nil
+
+        DispatchQueue.global(qos: .userInitiated).sync {
+            var metadata: [String: VideoMetadata] = [:]
+            fileNames.forEach({ fileName in
+                let asset = AVAsset(url: URL(fileURLWithPath: fileName))
+                let duration = CMTimeGetSeconds(asset.duration)
+
+                metadata[fileName] = VideoMetadata(
+                    duration: duration,
+                    playable: asset.isPlayable
+                )
+            })
+
+            result = GetMetadataResult(result: metadata)
+        }
+
+        return result
     }
 }
