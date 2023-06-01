@@ -62,18 +62,22 @@ internal struct DurationGenerator {
         var result: GetMetadataResult? = nil
 
         DispatchQueue.global(qos: .userInitiated).sync {
-            var metadata: [String: VideoMetadata] = [:]
-            fileNames.forEach({ fileName in
-                let asset = AVAsset(url: URL(fileURLWithPath: fileName))
-                let duration = CMTimeGetSeconds(asset.duration)
+            autoreleasepool {
+                var metadata: [String: VideoMetadata] = [:]
+                fileNames.forEach({ fileName in
+                    let asset = AVAsset(url: URL(fileURLWithPath: fileName))
+                    let duration = CMTimeGetSeconds(asset.duration)
+                    let isPlayable = asset.isPlayable
 
-                metadata[fileName] = VideoMetadata(
-                    duration: duration,
-                    playable: asset.isPlayable
-                )
-            })
+                    metadata[fileName] = VideoMetadata(
+                        duration: duration,
+                        playable: isPlayable
+                    )
+                })
 
-            result = GetMetadataResult(result: metadata)
+                result = GetMetadataResult(result: metadata)
+            }
+
         }
 
         return result
