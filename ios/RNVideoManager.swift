@@ -36,11 +36,10 @@ class RNVideoManager: RCTEventEmitter {
     @objc(getVideoMetadataFor:resolver:rejecter:)
     func getVideoMetadataFor(
         fileNames: [String],
-        resolve: RCTPromiseResolveBlock,
-        reject: RCTPromiseRejectBlock
+        resolve: @escaping RCTPromiseResolveBlock,
+        reject: @escaping RCTPromiseRejectBlock
     ) {
-        let response = durationGenerator.getMetadata(for: fileNames)
-        resolve(response.asDictionary())
+        durationGenerator.getMetadata(for: fileNames, resolve: resolve, reject: reject)
     }
 
     @objc(generateThumbnailFor:options:resolver:rejecter:)
