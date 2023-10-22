@@ -61,8 +61,6 @@ public class RNVideoManagerModule extends ReactContextBaseJavaModule {
 
         int seconds = (int) (Long.parseLong(time) / 1000);
 
-        retriever.release();
-
         WritableMap fileMetadata = new WritableNativeMap();
         fileMetadata.putInt("duration", seconds);
         fileMetadata.putBoolean("playable", true);
@@ -71,6 +69,8 @@ public class RNVideoManagerModule extends ReactContextBaseJavaModule {
       }
 
       promise.resolve(metadata);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     } catch (Error e) {
       e.printStackTrace();
       promise.reject(e.getMessage());
