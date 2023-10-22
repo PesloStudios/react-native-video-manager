@@ -69,8 +69,6 @@ public class RNVideoManagerModule extends ReactContextBaseJavaModule {
       }
 
       promise.resolve(metadata);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     } catch (Error e) {
       e.printStackTrace();
       promise.reject(e.getMessage());
