@@ -65,7 +65,8 @@ class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : 
                         reactContext.applicationContext,
                         Uri.parse(fileName.replaceFirst("file://".toRegex(), ""))
                     )
-                    var time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                    var time =
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                     if (time == null) {
                         time = "-1000"
                     }
@@ -76,6 +77,9 @@ class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : 
                     metadata.putMap(fileName, fileMetadata)
                 }
                 promise.resolve(metadata)
+            } catch (exception: Exception) {
+                exception.printStackTrace()
+                promise.reject(exception.message)
             } catch (e: Error) {
                 e.printStackTrace()
                 promise.reject(e.message)
@@ -112,6 +116,9 @@ class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : 
                 e.printStackTrace()
             }
             promise.resolve(true)
+        } catch (exception: Exception) {
+            exception.printStackTrace()
+            promise.reject(exception.message)
         } catch (e: Error) {
             e.printStackTrace()
             promise.reject(e.message)
