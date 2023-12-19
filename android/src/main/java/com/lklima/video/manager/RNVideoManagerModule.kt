@@ -29,6 +29,13 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
+class MergedVideoOptions(options: ReadableMap, content: ReactApplicationContext) {
+    val writeDirectory: String = options.getString("writeDirectory") ?: content.applicationContext.noBackupFilesDir.absolutePath
+    val fileName: String = options.getString("fileName") ?: "merged_video"
+    val actionKey: String = options.getString("actionKey") ?: "video_merge"
+    val ignoreSound: Boolean = options.getBoolean("ignoreSound")
+}
+
 @ReactModule(name = "RNVideoManager")
 class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     companion object {
@@ -126,22 +133,28 @@ class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : 
     }
 
     @ReactMethod
-    fun merge(videoFiles: ReadableArray, promise: Promise) {
+    fun merge(videoFiles: ReadableArray, options: ReadableMap, promise: Promise) {
+        val mergeOptions = MergedVideoOptions(options, reactContext)
+
         val inMovies: MutableList<Movie> = ArrayList()
+
         for (i in 0 until videoFiles.size()) {
-            val videoUrl = videoFiles.getString(i).replaceFirst("file://".toRegex(), "")
+            val videoUrl = videoFiles.getString(i)// PathResolver.getRealPathFromURI(reactContext, Uri.parse(videoFiles.getString(i)))
             try {
                 inMovies.add(MovieCreator.build(videoUrl))
             } catch (e: IOException) {
                 promise.reject(e.message)
                 e.printStackTrace()
+                return
             }
         }
+
         val videoTracks: MutableList<Track> = LinkedList()
         val audioTracks: MutableList<Track> = LinkedList()
+
         for (m in inMovies) {
             for (t in m.tracks) {
-                if (t.handler == "soun") {
+                if (t.handler == "soun" && !mergeOptions.ignoreSound) {
                     audioTracks.add(t)
                 }
                 if (t.handler == "vide") {
@@ -149,30 +162,31 @@ class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : 
                 }
             }
         }
+
         val result = Movie()
-        if (!audioTracks.isEmpty()) {
+        if (audioTracks.isNotEmpty()) {
             try {
                 result.addTrack(AppendTrack(*audioTracks.toTypedArray()))
             } catch (e: IOException) {
                 promise.reject(e.message)
                 e.printStackTrace()
+                return
             }
         }
-        if (!videoTracks.isEmpty()) {
+        if (videoTracks.isNotEmpty()) {
             try {
                 result.addTrack(AppendTrack(*videoTracks.toTypedArray()))
             } catch (e: IOException) {
                 promise.reject(e.message)
                 e.printStackTrace()
+                return
             }
         }
+
         val out = DefaultMp4Builder().build(result)
         var fc: FileChannel? = null
         try {
-            val tsLong = System.currentTimeMillis() / 1000
-            val ts = tsLong.toString()
-            val outputVideo =
-                reactContext.applicationContext.cacheDir.absolutePath + "output_" + ts + ".mp4"
+            val outputVideo = mergeOptions.writeDirectory + "/" + mergeOptions.fileName + ".mp4"
             fc = RandomAccessFile(String.format(outputVideo), "rw").channel
             Log.d("VIDEO", fc.toString())
             out.writeContainer(fc)
