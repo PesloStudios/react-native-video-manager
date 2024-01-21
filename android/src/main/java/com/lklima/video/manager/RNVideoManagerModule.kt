@@ -3,7 +3,6 @@ package com.lklima.video.manager
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.util.Log
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -13,31 +12,32 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeMap
 import com.facebook.react.module.annotations.ReactModule
-import com.googlecode.mp4parser.authoring.Movie
-import com.googlecode.mp4parser.authoring.Track
-import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder
-import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator
-import com.googlecode.mp4parser.authoring.tracks.AppendTrack
-import java.io.FileNotFoundException
+import com.lklima.video.manager.merger.UriSanitizer
+import com.lklima.video.manager.merger.VideoMerger
+import com.lklima.video.manager.merger.mp4parser.VideoMergerMp4Parser
+import com.lklima.video.manager.merger.options.MergedVideoOptionsFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.RandomAccessFile
-import java.nio.channels.FileChannel
-import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-class MergedVideoOptions(options: ReadableMap, content: ReactApplicationContext) {
-    val writeDirectory: String = options.getString("writeDirectory") ?: content.applicationContext.noBackupFilesDir.absolutePath
-    val fileName: String = options.getString("fileName") ?: "merged_video"
-    val actionKey: String = options.getString("actionKey") ?: "video_merge"
-    val ignoreSound: Boolean = options.getBoolean("ignoreSound")
-}
-
 @ReactModule(name = "RNVideoManager")
-class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+class RNVideoManagerModule(
+    private val reactContext: ReactApplicationContext
+) : ReactContextBaseJavaModule(reactContext) {
+
+    private val scope = MainScope()
+
+    private val mergedVideoOptionsFactory by lazy {
+        MergedVideoOptionsFactory(reactContext)
+    }
+
     companion object {
         private val NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors()
 
@@ -134,74 +134,29 @@ class RNVideoManagerModule(private val reactContext: ReactApplicationContext) : 
 
     @ReactMethod
     fun merge(videoFiles: ReadableArray, options: ReadableMap, promise: Promise) {
-        val mergeOptions = MergedVideoOptions(options, reactContext)
-
-        val inMovies: MutableList<Movie> = ArrayList()
-
-        for (i in 0 until videoFiles.size()) {
-            val videoUrl = videoFiles.getString(i)// PathResolver.getRealPathFromURI(reactContext, Uri.parse(videoFiles.getString(i)))
-            try {
-                inMovies.add(MovieCreator.build(videoUrl))
-            } catch (e: IOException) {
-                promise.reject(e.message)
-                e.printStackTrace()
-                return
-            }
-        }
-
-        val videoTracks: MutableList<Track> = LinkedList()
-        val audioTracks: MutableList<Track> = LinkedList()
-
-        for (m in inMovies) {
-            for (t in m.tracks) {
-                if (t.handler == "soun" && !mergeOptions.ignoreSound) {
-                    audioTracks.add(t)
+        scope.launch(Dispatchers.IO) {
+            val files = buildList<String> {
+                for (index in 0 until videoFiles.size()) {
+                    add(videoFiles.getString(index))
                 }
-                if (t.handler == "vide") {
-                    videoTracks.add(t)
+            }
+            val uriSanitizer = UriSanitizer()
+            val uris = files.map(uriSanitizer::sanitize)
+            val videoMerger: VideoMerger = VideoMergerMp4Parser(reactContext)
+            videoMerger.mergeVideos(
+                videoFiles = uris,
+                options = mergedVideoOptionsFactory.newInstance(options)
+            ).onSuccess { output: Uri ->
+                withContext(Dispatchers.Main) {
+                    promise.resolve("$output")
+                }
+            }.onFailure { error ->
+                withContext(Dispatchers.Main) {
+                    promise.reject(error)
                 }
             }
         }
-
-        val result = Movie()
-        if (audioTracks.isNotEmpty()) {
-            try {
-                result.addTrack(AppendTrack(*audioTracks.toTypedArray()))
-            } catch (e: IOException) {
-                promise.reject(e.message)
-                e.printStackTrace()
-                return
-            }
-        }
-        if (videoTracks.isNotEmpty()) {
-            try {
-                result.addTrack(AppendTrack(*videoTracks.toTypedArray()))
-            } catch (e: IOException) {
-                promise.reject(e.message)
-                e.printStackTrace()
-                return
-            }
-        }
-
-        val out = DefaultMp4Builder().build(result)
-        var fc: FileChannel? = null
-        try {
-            val outputVideo = mergeOptions.writeDirectory + "/" + mergeOptions.fileName + ".mp4"
-            fc = RandomAccessFile(String.format(outputVideo), "rw").channel
-            Log.d("VIDEO", fc.toString())
-            out.writeContainer(fc)
-            fc.close()
-            promise.resolve(outputVideo)
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-            promise.reject(e.message)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            promise.reject(e.message)
-        }
     }
 
-    override fun getName(): String {
-        return "RNVideoManager"
-    }
+    override fun getName(): String = "RNVideoManager"
 }
