@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.lklima.video.manager.merger.MergeOptions
+import com.lklima.video.manager.merger.MergedVideoResults
 import com.lklima.video.manager.merger.VideoMerger
 import org.mp4parser.Container
 import org.mp4parser.muxer.Movie
@@ -21,7 +22,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class VideoMergerMp4Parser(private val context: Context) : VideoMerger {
 
-    override suspend fun mergeVideos(videoFiles: List<Uri>, options: MergeOptions): Result<Uri> {
+    override suspend fun mergeVideos(videoFiles: List<Uri>, options: MergeOptions): Result<MergedVideoResults> {
         return runCatching {
             Log.d(TAG, "videoFiles=$videoFiles")
             val inMovies = videoFiles.map { uri ->
@@ -68,9 +69,12 @@ class VideoMergerMp4Parser(private val context: Context) : VideoMerger {
                 .build(result)
                 .storeVideo(destination)
 
-            Uri.fromFile(destination).also {
+            val uri = Uri.fromFile(destination).also {
                 Log.d(TAG, "file written => $it")
             }
+
+            // TODO: Surface the video duration here.
+            MergedVideoResults(uri.toString(), result.timescale.toInt())
         }
     }
 

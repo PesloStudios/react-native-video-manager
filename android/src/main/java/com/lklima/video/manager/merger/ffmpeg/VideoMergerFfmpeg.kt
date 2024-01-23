@@ -7,6 +7,7 @@ import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.LogRedirectionStrategy
 import com.lklima.video.manager.merger.MergeOptions
+import com.lklima.video.manager.merger.MergedVideoResults
 import com.lklima.video.manager.merger.VideoMerger
 import java.io.File
 
@@ -32,7 +33,7 @@ class VideoMergerFfmpeg(private val context: Context) : VideoMerger {
         Log.w(TAG, "${this.encodedPath}==>$it")
     }
 
-    override suspend fun mergeVideos(videoFiles: List<Uri>, options: MergeOptions): Result<Uri> {
+    override suspend fun mergeVideos(videoFiles: List<Uri>, options: MergeOptions): Result<MergedVideoResults> {
         return runCatching {
             val command = createCommand(
                 videoPaths = videoFiles.map { uri ->
@@ -54,7 +55,11 @@ class VideoMergerFfmpeg(private val context: Context) : VideoMerger {
                 )
                 throw RuntimeException("session failed ${session.state} and rc ${session.returnCode}.${session.failStackTrace}")
             }
-            Uri.fromFile(getOutputFile(options))
+
+            val uri = Uri.fromFile(getOutputFile(options))
+
+            // TODO: Surface the video duration here.
+            MergedVideoResults(uri.toString(), session.duration.toInt())
         }
     }
 

@@ -12,6 +12,8 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeMap
 import com.facebook.react.module.annotations.ReactModule
+import com.lklima.video.manager.merger.MergedVideoResults
+import com.lklima.video.manager.merger.MergedVideoResultsMapFactory
 import com.lklima.video.manager.merger.UriSanitizer
 import com.lklima.video.manager.merger.VideoMerger
 import com.lklima.video.manager.merger.mp4parser.VideoMergerMp4Parser
@@ -36,6 +38,10 @@ class RNVideoManagerModule(
 
     private val mergedVideoOptionsFactory by lazy {
         MergedVideoOptionsFactory(reactContext)
+    }
+
+    private val mergedVideoResultsMapFactory by lazy {
+        MergedVideoResultsMapFactory()
     }
 
     companion object {
@@ -146,9 +152,9 @@ class RNVideoManagerModule(
             videoMerger.mergeVideos(
                 videoFiles = uris,
                 options = mergedVideoOptionsFactory.newInstance(options)
-            ).onSuccess { output: Uri ->
+            ).onSuccess { output: MergedVideoResults ->
                 withContext(Dispatchers.Main) {
-                    promise.resolve("$output")
+                    promise.resolve(mergedVideoResultsMapFactory.newInstance(output))
                 }
             }.onFailure { error ->
                 withContext(Dispatchers.Main) {
