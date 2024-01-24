@@ -1,4 +1,4 @@
-package com.example.peslovideomanager.lib.native
+package com.lklima.video.manager.merger.native
 
 import android.content.Context
 import android.media.MediaCodec
@@ -29,10 +29,11 @@ class VideoMergerNative(private val context: Context) : VideoMerger {
     ): Result<MergedVideoResults> {
         Log.d(TAG, "videoFiles=$videoFiles")
         return runCatching {
-            val outputFile = getOutputFile()
+            val outputFile = getOutputFile(options)
             concatenateFiles(
                 sources = videoFiles,
-                output = outputFile.fileDescriptor
+                output = outputFile.fileDescriptor,
+                noAudio = options.noAudio
             )
             val uri = Uri.fromFile(outputFile).also {
                 Log.d(TAG, "file written => $it")
@@ -44,7 +45,7 @@ class VideoMergerNative(private val context: Context) : VideoMerger {
         }
     }
 
-    private fun concatenateFiles(output: FileDescriptor, sources: List<Uri>) {
+    private fun concatenateFiles(output: FileDescriptor, sources: List<Uri>, noAudio: Boolean) {
         if (sources.isEmpty()) throw IllegalArgumentException("")
         val muxer = MediaMuxer(output, MUXER_OUTPUT_MPEG_4)
         val result = runCatching {
@@ -83,7 +84,7 @@ class VideoMergerNative(private val context: Context) : VideoMerger {
                     val mf = extractorAudio.getTrackFormat(i)
                     val mime = mf.getString(MediaFormat.KEY_MIME)
                     Log.d(TAG, "\ttrack[$i]=>$mime")
-                    if (mime?.startsWith("audio/") == true) {
+                    if (!noAudio && mime?.startsWith("audio/") == true) {
                         extractorAudio.selectTrack(i)
                         audioFormat = extractorAudio.getTrackFormat(i)
                         break
@@ -150,11 +151,11 @@ class VideoMergerNative(private val context: Context) : VideoMerger {
         return result.getOrThrow()
     }
 
-    private fun getOutputFile(): File {
-        val dir = File(context.filesDir, "videos").apply {
+    private fun getOutputFile(options: MergeOptions): File {
+        val dir = File(options.outputPath).apply {
             mkdirs()
         }
-        return File(dir, "${System.currentTimeMillis()}.mp4")
+        return File(dir, "${options.fileName}.mp4")
     }
 
     private companion object {

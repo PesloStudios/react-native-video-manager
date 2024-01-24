@@ -16,7 +16,7 @@ import com.lklima.video.manager.merger.MergedVideoResults
 import com.lklima.video.manager.merger.MergedVideoResultsMapFactory
 import com.lklima.video.manager.merger.UriSanitizer
 import com.lklima.video.manager.merger.VideoMerger
-import com.lklima.video.manager.merger.mp4parser.VideoMergerMp4Parser
+import com.lklima.video.manager.merger.native.VideoMergerNative
 import com.lklima.video.manager.merger.options.MergedVideoOptionsFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
