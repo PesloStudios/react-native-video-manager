@@ -148,7 +148,7 @@ class RNVideoManagerModule(
             }
             val uriSanitizer = UriSanitizer()
             val uris = files.map(uriSanitizer::sanitize)
-            val videoMerger: VideoMerger = VideoMergerMp4Parser(reactContext)
+            val videoMerger: VideoMerger = VideoMergerNative(reactContext)
             videoMerger.mergeVideos(
                 videoFiles = uris,
                 options = mergedVideoOptionsFactory.newInstance(options)
