@@ -9,6 +9,8 @@ import com.arthenica.ffmpegkit.LogRedirectionStrategy
 import com.lklima.video.manager.merger.MergeOptions
 import com.lklima.video.manager.merger.MergedVideoResults
 import com.lklima.video.manager.merger.VideoMerger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 
@@ -23,40 +25,29 @@ class VideoMergerFfmpeg(private val context: Context) : VideoMerger {
 
     private fun Uri.safePathForRead(): String = requireNotNull(
         FFmpegKitConfig.getSafParameterForRead(context.applicationContext, this)
-    ).also {
-        Log.w(TAG, "${this.encodedPath}==>$it")
-    }
+    )
 
-    private fun Uri.safePathForWrite(): String = requireNotNull(
-        FFmpegKitConfig.getSafParameterForWrite(context.applicationContext, this)
-    ).also {
-        Log.w(TAG, "${this.encodedPath}==>$it")
-    }
-
-    override suspend fun mergeVideos(videoFiles: List<Uri>, options: MergeOptions): Result<MergedVideoResults> {
-        return runCatching {
+    override suspend fun mergeVideos(
+        videoFiles: List<Uri>,
+        options: MergeOptions
+    ): Result<MergedVideoResults> = withContext(Dispatchers.IO) {
+        runCatching {
+            val outputFile = getOutputFile(options)
             val command = createCommand(
                 videoPaths = videoFiles.map { uri ->
                     uri.safePathForRead()
                 },
-                output = Uri.fromFile(getOutputFile(options)).safePathForWrite()
+                output = outputFile.toString()
             )
             val session = FFmpegKit.execute(command)
             val returnCode = session.returnCode
-            if (returnCode.isValueSuccess) {
-                Log.v(TAG, "SUCCESS")
-            } else if (returnCode.isValueCancel) {
-                Log.w(TAG, "Cancelled")
+            if (returnCode.isValueCancel) {
                 throw RuntimeException("session cancelled")
-            } else {
-                Log.e(
-                    TAG,
-                    "Command failed with state ${session.state} and rc ${session.returnCode}.${session.failStackTrace}"
-                )
+            } else if (returnCode.isValueError) {
                 throw RuntimeException("session failed ${session.state} and rc ${session.returnCode}.${session.failStackTrace}")
             }
 
-            val uri = Uri.fromFile(getOutputFile(options))
+            val uri = Uri.fromFile(outputFile)
 
             // TODO: Surface the video duration here.
             MergedVideoResults(uri.toString(), session.duration.toInt())

@@ -14,7 +14,7 @@ import com.lklima.video.manager.merger.MergedVideoResults
 import com.lklima.video.manager.merger.MergedVideoResultsMapFactory
 import com.lklima.video.manager.merger.UriSanitizer
 import com.lklima.video.manager.merger.VideoMerger
-import com.lklima.video.manager.merger.native.VideoMergerNative
+import com.lklima.video.manager.merger.ffmpeg.VideoMergerFfmpeg
 import com.lklima.video.manager.merger.options.MergedVideoOptionsFactory
 import com.lklima.video.manager.metadata.VideoMetadataExtractor
 import com.lklima.video.manager.thumbnail.VideoThumbnailGenerator
@@ -102,7 +102,7 @@ class RNVideoManagerModule(
                 val uriSanitizer = UriSanitizer()
                 files.map(uriSanitizer::sanitize)
             }.mapCatching { uris ->
-                val videoMerger: VideoMerger = VideoMergerNative(reactContext)
+                val videoMerger: VideoMerger = VideoMergerFfmpeg(reactContext)
                 videoMerger.mergeVideos(
                     videoFiles = uris,
                     options = mergedVideoOptionsFactory.newInstance(options)

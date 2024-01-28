@@ -50,8 +50,9 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'org.mp4parser:isoparser:1.9.27' // do not upgrade
     implementation 'org.mp4parser:muxer:1.9.27' // do not upgrade
-    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2.LTS'
     implementation 'org.slf4j:slf4j-android:1.7.36'
+    implementation fileTree(dir: "libs", include: ["*.aar"])
+    implementation 'com.arthenica:smart-exception-java:0.2.1' // required by ffmpeg
 }
 
 allprojects {
