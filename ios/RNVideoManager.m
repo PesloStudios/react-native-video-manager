@@ -4,7 +4,7 @@
 #import <React/RCTBridgeModule.h>
 #endif
 
-@interface RCT_EXTERN_MODULE(RNVideoManager)
+@interface RCT_EXTERN_MODULE(RNVideoManager, NSObject)
 
 RCT_EXTERN_METHOD(getDurationFor:(NSString *)fileName
                   resolver:(RCTPromiseResolveBlock)resolve

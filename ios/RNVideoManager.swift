@@ -2,12 +2,13 @@ import Foundation
 import AVFoundation
 
 @objc(RNVideoManager)
-class RNVideoManager {
+class RNVideoManager: NSObject {
     private let durationGenerator = DurationGenerator()
     private let thumbnailGenerator = ThumbnailGenerator()
     private var mergedVideoGenerator = MergedVideoGenerator()
 
-    override class func requiresMainQueueSetup() -> Bool {
+    @objc
+    static func requiresMainQueueSetup() -> Bool {
         true
     }
 
