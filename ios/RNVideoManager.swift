@@ -2,25 +2,13 @@ import Foundation
 import AVFoundation
 
 @objc(RNVideoManager)
-class RNVideoManager: RCTEventEmitter {
+class RNVideoManager {
     private let durationGenerator = DurationGenerator()
     private let thumbnailGenerator = ThumbnailGenerator()
     private var mergedVideoGenerator = MergedVideoGenerator()
 
     override class func requiresMainQueueSetup() -> Bool {
         true
-    }
-
-    override func supportedEvents() -> [String]! {
-        ["VideoManager-MergeProgress"]
-    }
-
-    override func startObserving() {
-        mergedVideoGenerator.hasListeners = true
-    }
-
-    override func stopObserving() {
-        mergedVideoGenerator.hasListeners = false
     }
 
     @objc(getDurationFor:resolver:rejecter:)
@@ -65,10 +53,6 @@ class RNVideoManager: RCTEventEmitter {
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
-        mergedVideoGenerator.sendEventCallback = { [weak self] name, payload in
-            self?.sendEvent(withName: name, body: payload)
-        }
-
         mergedVideoGenerator.merge(fileNames, options: options) { results in
             resolve(results.asDictionary())
         } onFailure: { error in

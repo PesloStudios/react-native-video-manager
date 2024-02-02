@@ -1,18 +1,6 @@
 import Foundation
 import AVFoundation
 
-internal struct MergedVideoProgress {
-    let key: String
-    let progress: Float
-
-    func asDictionary() -> [AnyHashable: Any] {
-        [
-            "key": key,
-            "progress": NSNumber(value: progress)
-        ]
-    }
-}
-
 internal struct MergedVideoResults {
     let path: String
     let duration: CGFloat
@@ -58,7 +46,6 @@ internal struct MergedVideoOptions: Codable {
     // TODO: Add support for optional values within options
     var writeDirectory: String = MergedVideoOptions.applicationDocumentsDirectory()
     var fileName: String = "merged_video"
-    var actionKey: String = "video_merge"
     var ignoreSound: Bool = false
 
     /// Initialises a config object, with the given dictionary payload.
@@ -92,13 +79,6 @@ typealias MergedVideosSuccess = (MergedVideoResults) -> Void
 typealias MergedVideosFailure = (MergedVideoError) -> Void
 
 internal class MergedVideoGenerator {
-
-    var sendEventCallback: ((String, [AnyHashable: Any]) -> Void)?
-
-    var hasListeners: Bool = false
-    private var timers = [String: Timer]()
-
-    private static let timerInvalidationStatuses: [AVAssetExportSession.Status] = [.cancelled, .failed, .completed]
 
     internal func merge(
         _ fileNames: [String],
@@ -167,15 +147,6 @@ internal class MergedVideoGenerator {
             exporter.outputURL = writeURL
             exporter.outputFileType = .mp4
 
-            DispatchQueue.main.async { [weak self] in
-                let exportProgressBarTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
-                    self?.onTimerFiredFor(timer, exporter: exporter, actionKey: mergeOptions.actionKey)
-                }
-
-                RunLoop.current.add(exportProgressBarTimer, forMode: .common)
-                self?.timers[mergeOptions.actionKey] = exportProgressBarTimer
-            }
-
             exporter.exportAsynchronously { [weak self] in
                 self?.handleUpdate(in: exporter, options: mergeOptions, path: docPath, duration: totalDuration, onSuccess: onSuccess, onFailure: onFailure)
             }
@@ -215,34 +186,6 @@ internal class MergedVideoGenerator {
             onFailure(error)
         } catch {
             onFailure(.unknownError)
-        }
-    }
-
-    private func onTimerFiredFor(_ timer: Timer, exporter: AVAssetExportSession, actionKey: String) {
-        guard !MergedVideoGenerator.timerInvalidationStatuses.contains(exporter.status) else {
-            timer.invalidate()
-            timers[actionKey] = nil
-            return
-        }
-
-        let progress = exporter.progress
-
-        guard progress != 0 else {
-            return
-        }
-
-        guard progress < 0.99 else {
-            timer.invalidate()
-            timers[actionKey] = nil
-            return
-        }
-
-        if (hasListeners) {
-            let results = MergedVideoProgress(key: actionKey, progress: progress)
-            self.sendEventCallback?(
-                "VideoManager-MergeProgress",
-                results.asDictionary()
-            )
         }
     }
 }

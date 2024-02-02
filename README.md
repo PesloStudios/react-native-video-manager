@@ -70,7 +70,6 @@ You can also check a complete example in `/example` folder.
   - `fileName`: `string` - rather than using the same file name, this allows the implementing app to provide a different / unique file name.
   - `ignoreSound`: `boolean` - for when you know your videos will not have an audio track, setting this allows the merge logic to operate - ignoring any audio.
     - Note: I may remove this, and instead update the logic to automatically handle this.
-  - `actionKey`: `string` - setting this allows progress events to be emitted to JS. If multiple merge operations have been requested in a batch, this allows the progress to be matched to a given video
   - All options (where replacing a previous hardcoded value) use the old value as a fallback, if options is not provided
 - Updated `merge(videos: string[])` to support returning `duration` alongside the `uri`.
 

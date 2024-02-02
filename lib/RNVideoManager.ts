@@ -22,7 +22,6 @@ interface MergeOptions {
   writeDirectory?: string;
   fileName?: string;
   ignoreSound?: boolean
-  actionKey?: string;
 }
 
 interface ThumbnailOptions {
