@@ -31,7 +31,7 @@ internal struct GetThumbnailOptions: Codable {
 
     var filePath: String {
         get {
-            "\(writeDirectory)/\(fileName).png"
+            "\(writeDirectory)/\(fileName).jpg"
         }
     }
 
@@ -72,28 +72,32 @@ public struct ThumbnailGenerator {
         onSuccess: @escaping ThumbnailGeneratorSuccess,
         onFailure: @escaping ThumbnailGeneratorFailure
     ) {
-        do {
-            let thumbnailOptions = try GetThumbnailOptions(rawValue: options)
+        autoreleasepool {
+            do {
+                let thumbnailOptions = try GetThumbnailOptions(rawValue: options)
 
-            let asset = AVAsset(url: URL(fileURLWithPath: fileName))
+                let asset = AVAsset(url: URL(fileURLWithPath: fileName))
 
-            let generator = AVAssetImageGenerator(asset: asset)
-            generator.appliesPreferredTrackTransform = true
+                let generator = AVAssetImageGenerator(asset: asset)
+                generator.appliesPreferredTrackTransform = true
 
-            generator.generateCGImagesAsynchronously(
-                forTimes: thumbnailOptions.generatorTimestamp
-            ) { timeRequested, image, timeActual, result, error in
-                guard result == .succeeded else {
-                    onFailure(.thumbnailGenerationFailed)
-                    return
+                generator.generateCGImagesAsynchronously(
+                    forTimes: thumbnailOptions.generatorTimestamp
+                ) { timeRequested, image, timeActual, result, error in
+                    autoreleasepool {
+                        guard result == .succeeded else {
+                            onFailure(.thumbnailGenerationFailed)
+                            return
+                        }
+
+                        writeImage(image, to: thumbnailOptions.filePath, onSuccess: onSuccess, onFailure: onFailure)
+                    }
                 }
-
-                writeImage(image, to: thumbnailOptions.filePath, onSuccess: onSuccess, onFailure: onFailure)
+            } catch let error as ThumbnailGeneratorError {
+                onFailure(error)
+            } catch {
+                onFailure(.unknownError)
             }
-        } catch let error as ThumbnailGeneratorError {
-            onFailure(error)
-        } catch {
-            onFailure(.unknownError)
         }
     }
 
@@ -103,22 +107,25 @@ public struct ThumbnailGenerator {
         onSuccess: ThumbnailGeneratorSuccess,
         onFailure: ThumbnailGeneratorFailure
     ) {
-        guard let image = image else {
-            onFailure(.thumbnailGenerationFailed)
-            return
-        }
+        autoreleasepool {
+            guard let image = image else {
+                onFailure(.thumbnailGenerationFailed)
+                return
+            }
 
-        guard let data = UIImage(cgImage: image).pngData() else {
-            onFailure(.thumbnailMissingPNGData)
-            return
-        }
+            guard let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.4) else {
+                onFailure(.thumbnailMissingPNGData)
+                return
+            }
 
-        let fileManager = FileManager.default
-        guard fileManager.createFile(atPath: filePath, contents: data) else {
-            onFailure(.imageNotWritten)
-            return
-        }
+            let fileManager = FileManager.default
+            guard fileManager.createFile(atPath: filePath, contents: data) else {
+                onFailure(.imageNotWritten)
+                return
+            }
 
-        onSuccess()
+            onSuccess()
+        }
     }
 }
+

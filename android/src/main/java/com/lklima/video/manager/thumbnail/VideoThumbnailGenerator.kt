@@ -32,9 +32,9 @@ class VideoThumbnailGenerator(
             val outputDir = File(writeDirectory).apply {
                 mkdirs()
             }
-            val outputFile = File(outputDir, "${fileName}.png")
+            val outputFile = File(outputDir, "${fileName}.jpg")
             FileOutputStream(outputFile).use { out ->
-                thumbnailBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 40, out)
             }
         }
     }
