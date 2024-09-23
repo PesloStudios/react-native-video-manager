@@ -1,4 +1,4 @@
-import { NativeModules } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 const { RNVideoManager } = NativeModules;
 
@@ -48,7 +48,11 @@ export async function merge(videos: string[], options?: MergeOptions): Promise<M
 }
 
 // TODO: Update this to also work on Android
-export async function exportAsGrid(videos: string[], options?: GridExportOptions): Promise<GridExportResponse> {
+export async function exportAsGrid(videos: string[], options?: GridExportOptions): Promise<GridExportResponse | null> {
+  if (Platform.OS === 'android') {
+    return null
+  }
+  
   const {uri}: { uri: string } = await RNVideoManager.exportAsGrid(videos, options);
 
   return { uri };
