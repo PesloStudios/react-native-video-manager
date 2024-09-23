@@ -7,6 +7,10 @@ interface MergeResponse {
   duration: number;
 }
 
+interface GridExportResponse {
+  uri: string;
+}
+
 interface DurationResponse {
   duration: number;
   playable: boolean;
@@ -24,6 +28,12 @@ interface MergeOptions {
   ignoreSound?: boolean
 }
 
+interface GridExportOptions {
+  writeDirectory: string;
+  fileName: string;
+  duration: number;
+}
+
 interface ThumbnailOptions {
   writeDirectory: string;
   fileName: string;
@@ -35,6 +45,13 @@ export async function merge(videos: string[], options?: MergeOptions): Promise<M
   const {uri, duration}: { uri: string, duration: number } = await RNVideoManager.merge(videos, options);
 
   return { uri, duration };
+}
+
+// TODO: Update this to also work on Android
+export async function exportAsGrid(videos: string[], options?: GridExportOptions): Promise<GridExportResponse> {
+  const {uri}: { uri: string } = await RNVideoManager.exportAsGrid(videos, options);
+
+  return { uri };
 }
 
 export async function getDurationFor(video: string): Promise<DurationResponse> {

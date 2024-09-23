@@ -6,6 +6,7 @@ class RNVideoManager: NSObject {
     private let durationGenerator = DurationGenerator()
     private let thumbnailGenerator = ThumbnailGenerator()
     private var mergedVideoGenerator = MergedVideoGenerator()
+    private var gridExportGenerator = GridExportGenerator()
 
     @objc
     static func requiresMainQueueSetup() -> Bool {
@@ -55,6 +56,20 @@ class RNVideoManager: NSObject {
         reject: @escaping RCTPromiseRejectBlock
     ) {
         mergedVideoGenerator.merge(fileNames, options: options) { results in
+            resolve(results.asDictionary())
+        } onFailure: { error in
+            reject("event_failure", error.errorDescription, nil)
+        }
+    }
+
+    @objc(exportAsGrid:options:resolver:rejecter:)
+    func exportAsGrid(
+        fileNames: [String],
+        options: [AnyHashable: Any]?,
+        resolve: @escaping RCTPromiseResolveBlock,
+        reject: @escaping RCTPromiseRejectBlock
+    ) {
+        gridExportGenerator.exportAsGrid(fileNames, options: options) { results in
             resolve(results.asDictionary())
         } onFailure: { error in
             reject("event_failure", error.errorDescription, nil)

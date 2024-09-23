@@ -44,7 +44,7 @@ internal enum MergedVideoError: LocalizedError {
 
 internal struct MergedVideoOptions: Codable {
     // TODO: Add support for optional values within options
-    var writeDirectory: String = MergedVideoOptions.applicationDocumentsDirectory()
+    var writeDirectory: String = VideoManagerUtils.applicationDocumentsDirectory()
     var fileName: String = "merged_video"
     var ignoreSound: Bool = false
 
@@ -66,12 +66,6 @@ internal struct MergedVideoOptions: Codable {
 
     func getWriteDirectory() -> URL {
         return URL(fileURLWithPath: writeDirectory)
-    }
-
-    static func applicationDocumentsDirectory() -> String {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        return documentsDirectory.absoluteString
     }
 }
 
