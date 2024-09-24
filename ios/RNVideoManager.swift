@@ -2,15 +2,27 @@ import Foundation
 import AVFoundation
 
 @objc(RNVideoManager)
-class RNVideoManager: NSObject {
+class RNVideoManager: RCTEventEmitter {
     private let durationGenerator = DurationGenerator()
     private let thumbnailGenerator = ThumbnailGenerator()
     private var mergedVideoGenerator = MergedVideoGenerator()
     private var gridExportGenerator = GridExportGenerator()
 
     @objc
-    static func requiresMainQueueSetup() -> Bool {
+    override static func requiresMainQueueSetup() -> Bool {
         true
+    }
+
+    override func supportedEvents() -> [String]! {
+        [EventKeys.GridExportProgressKey]
+    }
+
+    override func startObserving() {
+        gridExportGenerator.hasListeners = true
+    }
+
+    override func stopObserving() {
+        gridExportGenerator.hasListeners = false
     }
 
     @objc(getDurationFor:resolver:rejecter:)
@@ -69,6 +81,10 @@ class RNVideoManager: NSObject {
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
+        gridExportGenerator.sendEventCallback = { [weak self] name, payload in
+            self?.sendEvent(withName: name, body: payload)
+        }
+
         gridExportGenerator.exportAsGrid(fileNames, options: options) { results in
             resolve(results.asDictionary())
         } onFailure: { error in

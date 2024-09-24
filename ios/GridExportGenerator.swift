@@ -6,6 +6,16 @@ import AVFoundation
  to best support displaying in a grid + some of the later AVFoundation techniques.
  */
 
+internal struct GridExportProgressEvent {
+    let progress: Float
+
+    func asDictionary() -> [AnyHashable: Any] {
+        [
+            "progress": NSNumber(value: progress)
+        ]
+    }
+}
+
 internal struct GridExportResult {
     let path: String
 
@@ -69,6 +79,7 @@ internal struct GridExportOptions: Codable {
 
 typealias GridExportSuccess = (GridExportResult) -> Void
 typealias GridExportFailure = (GridExportError) -> Void
+typealias GridExportProgressEventCallback = ((String, [AnyHashable: Any]) -> Void)
 
 internal struct AssetInfo {
     let asset: AVURLAsset
@@ -77,6 +88,12 @@ internal struct AssetInfo {
 }
 
 internal class GridExportGenerator {
+
+    var sendEventCallback: GridExportProgressEventCallback?
+    var hasListeners = false
+    private var exportTimer: Timer?
+
+    private static let timerInvalidationStatuses: [AVAssetExportSession.Status] = [.cancelled, .failed, .completed]
 
     // 2 * width of HD footage
     static let EXPORT_WIDTH: CGFloat = 2560
@@ -180,6 +197,18 @@ internal class GridExportGenerator {
             exporter.videoComposition = stackComposition
             exporter.outputFileType = .mp4
 
+            DispatchQueue.main.async { [weak self] in
+               let exportProgressBarTimer = Timer.scheduledTimer(
+                withTimeInterval: 1,
+                repeats: true
+               ) { [weak self] timer in
+                   self?.onTimerFiredFor(timer, exporter: exporter)
+               }
+
+               RunLoop.current.add(exportProgressBarTimer, forMode: .common)
+               self?.exportTimer = exportProgressBarTimer
+           }
+
             exporter.exportAsynchronously { [weak self] in
                 self?.handleUpdate(
                     in: exporter,
@@ -193,6 +222,37 @@ internal class GridExportGenerator {
             onFailure(error)
         } catch {
             onFailure(.unknownError)
+        }
+    }
+
+    private func onTimerFiredFor(
+        _ timer: Timer,
+        exporter: AVAssetExportSession
+    ) {
+        guard !GridExportGenerator.timerInvalidationStatuses.contains(exporter.status) else {
+            exportTimer?.invalidate()
+            exportTimer = nil
+            return
+        }
+
+        let progress = exporter.progress
+
+        guard progress != 0 else {
+            return
+        }
+
+        guard progress < 0.99 else {
+            exportTimer?.invalidate()
+            exportTimer = nil
+            return
+        }
+
+        if (hasListeners) {
+            let results = GridExportProgressEvent(progress: progress)
+            self.sendEventCallback?(
+                EventKeys.GridExportProgressKey,
+                results.asDictionary()
+            )
         }
     }
 

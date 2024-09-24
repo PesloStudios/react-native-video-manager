@@ -7,3 +7,5 @@
 #else
 #import <React/RCTBridgeModule.h>
 #endif
+
+#import <React/RCTEventEmitter.h>
