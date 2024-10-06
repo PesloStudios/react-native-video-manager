@@ -28,10 +28,13 @@ interface MergeOptions {
   ignoreSound?: boolean
 }
 
+export type GridExportResolutionOption = "720p" | "1080p" | "4K" | "doubleLargest"
+
 interface GridExportOptions {
   writeDirectory: string;
   fileName: string;
   duration: number;
+  resolution: GridExportResolutionOption
 }
 
 interface ThumbnailOptions {

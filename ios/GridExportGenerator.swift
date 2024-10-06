@@ -55,10 +55,32 @@ internal enum GridExportError: LocalizedError {
     }
 }
 
+internal enum GridExportOutputResolutionOption: String, Codable {
+    case res720p = "720p"
+    case res1080p = "1080p"
+    case res4K = "4K"
+    case resDoubleLargest = "doubleLargest"
+
+    var desiredSize: CGSize? {
+        switch self {
+        case .res720p:
+            CGSize(width: 1280, height: 720)
+        case .res1080p:
+            CGSize(width: 1920, height: 1080)
+        case .res4K:
+            CGSize(width: 3840, height: 2160)
+        default:
+            nil
+        }
+    }
+}
+
+
 internal struct GridExportOptions: Codable {
     var writeDirectory: String = VideoManagerUtils.applicationDocumentsDirectory()
     var fileName: String = "grid_export"
     var duration: Double = 0
+    var resolution: GridExportOutputResolutionOption = .resDoubleLargest
 
     /// Initialises a config object, with the given dictionary payload.
     /// - Parameter rawValue: A dictionary options payload, provided by the JS layer.
@@ -95,10 +117,13 @@ internal class GridExportGenerator {
 
     private static let timerInvalidationStatuses: [AVAssetExportSession.Status] = [.cancelled, .failed, .completed]
 
-    // 2 * width of HD footage
-    static let EXPORT_WIDTH: CGFloat = 2560
-    // 2 * height of HD footage
-    static let EXPORT_HEIGHT: CGFloat = 1920
+    // 2 * width & height of HD footage
+    static let EXPORT_SIZE = CGSize(width: 2560, height: 1920)
+
+    private func resolutionSizeFor(_ asset: AVAssetTrack) -> CGSize {
+        let size = asset.naturalSize.applying(asset.preferredTransform)
+        return CGSize(width: abs(size.width), height: abs(size.height))
+    }
 
     private func getAssetInfoFrom(
         _ filePath: String,
@@ -120,23 +145,26 @@ internal class GridExportGenerator {
 
     private func getInstructionFrom(
         _ assetInfo: AssetInfo,
+        targetResolution: CGSize,
         activeIndex: Int,
         totalCount: Int
     ) -> AVMutableVideoCompositionLayerInstruction {
         let lInst = AVMutableVideoCompositionLayerInstruction(assetTrack: assetInfo.compTrack)
+        let resolution = assetInfo.assetTrack.resolution
+        let fittingResolution = resolution.boundsThatFit(parent: targetResolution)
 
-        // The example code had a way of getting a scale value - we're not downscaling the videos, just displaying them in a grid
-        let width: CGFloat = GridExportGenerator.EXPORT_WIDTH / 2
-        let height: CGFloat = GridExportGenerator.EXPORT_HEIGHT / 2
-        let scale: CGFloat = 1
+        let width: CGFloat = targetResolution.width
+        let height: CGFloat = targetResolution.height
+
+        let scale = fittingResolution.1
 
         let transform = CGAffineTransform(scaleX: scale, y: scale)
 
         if (activeIndex < 2) {
-            let t2 = transform.concatenating(CGAffineTransform(translationX: CGFloat(activeIndex)*width, y: 0))
+            let t2 = transform.concatenating(CGAffineTransform(translationX: (activeIndex == 0 ? targetResolution.width - fittingResolution.0.width : 0) + (CGFloat(activeIndex)*width), y: targetResolution.height - fittingResolution.0.height))
             lInst.setTransform(t2, at: CMTime.zero)
         } else {
-            let t2 = transform.concatenating(CGAffineTransform(translationX: CGFloat(activeIndex - 2)*width, y: height))
+            let t2 = transform.concatenating(CGAffineTransform(translationX: (activeIndex == 2 ? targetResolution.width - fittingResolution.0.width : 0) + (CGFloat(activeIndex - 2)*width), y: height))
             lInst.setTransform(t2, at: CMTime.zero)
         }
 
@@ -157,10 +185,20 @@ internal class GridExportGenerator {
                 try getAssetInfoFrom($0, composition: composition)
             }
 
+            var targetResolution = exportOptions.resolution.desiredSize ?? GridExportGenerator.EXPORT_SIZE
+
+            if (exportOptions.resolution == .resDoubleLargest) {
+                targetResolution = assetInfos.sorted { (a: AssetInfo, b: AssetInfo) in
+                    let resolutionA = a.assetTrack.resolution
+                    let resolutionB = b.assetTrack.resolution
+                    return (resolutionA.width * resolutionA.height) > (resolutionB.width * resolutionB.height)
+                }.first?.assetTrack.resolution.doubled ?? GridExportGenerator.EXPORT_SIZE
+            }
+
             let stackComposition = AVMutableVideoComposition()
             stackComposition.renderSize = CGSize(
-                width: GridExportGenerator.EXPORT_WIDTH,
-                height: GridExportGenerator.EXPORT_HEIGHT
+                width: targetResolution.width,
+                height: targetResolution.height
             )
 
             stackComposition.renderScale = 1.0
@@ -171,7 +209,7 @@ internal class GridExportGenerator {
 
             var i = 0
             let instructions: [AVMutableVideoCompositionLayerInstruction] = assetInfos.map {
-                let instruction = getInstructionFrom($0, activeIndex: i, totalCount: assetInfos.count)
+                let instruction = getInstructionFrom($0, targetResolution: targetResolution.halfed, activeIndex: i, totalCount: assetInfos.count)
                 i += 1
                 return instruction
             }
