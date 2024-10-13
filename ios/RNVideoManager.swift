@@ -67,9 +67,12 @@ class RNVideoManager: RCTEventEmitter {
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
+        DeviceSleepBlock.stopSleep()
         mergedVideoGenerator.merge(fileNames, options: options) { results in
+            DeviceSleepBlock.allowSleep()
             resolve(results.asDictionary())
         } onFailure: { error in
+            DeviceSleepBlock.allowSleep()
             reject("event_failure", error.errorDescription, nil)
         }
     }
@@ -85,9 +88,12 @@ class RNVideoManager: RCTEventEmitter {
             self?.sendEvent(withName: name, body: payload)
         }
 
+        DeviceSleepBlock.stopSleep()
         gridExportGenerator.exportAsGrid(fileNames, options: options) { results in
+            DeviceSleepBlock.allowSleep()
             resolve(results.asDictionary())
         } onFailure: { error in
+            DeviceSleepBlock.allowSleep()
             reject("event_failure", error.errorDescription, nil)
         }
     }
