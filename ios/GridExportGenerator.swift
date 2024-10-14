@@ -201,10 +201,12 @@ internal class GridExportGenerator {
                 height: targetResolution.height
             )
 
+            let baseFPS = assetInfos.first?.assetTrack.nominalFrameRate
+            let baseScale = assetInfos.first?.assetTrack.naturalTimeScale
             stackComposition.renderScale = 1.0
             stackComposition.frameDuration = CMTime(
-                seconds: 1/30,
-                preferredTimescale: 600
+                seconds: Double(1/(baseFPS ?? 30)),
+                preferredTimescale: baseScale ?? 600
             )
 
             var i = 0
