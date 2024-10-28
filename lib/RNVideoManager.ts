@@ -28,7 +28,7 @@ interface MergeOptions {
   ignoreSound?: boolean
 }
 
-export type GridExportResolutionOption = "720p" | "1080p" | "4K" | "doubleLargest"
+export type GridExportResolutionOption = "720p" | "1080p" | "4K" | "doubleLargest" | "portrait"
 
 interface GridExportOptions {
   writeDirectory: string;

@@ -2,7 +2,7 @@ import Foundation
 import AVFoundation
 
 /**
- This code is nspired by and refined from https://stackoverflow.com/questions/68558373/how-to-combine-hstack-multiple-videos-side-by-side-with-avmutablevideocomposit
+ This code is inspired by and refined from https://stackoverflow.com/questions/68558373/how-to-combine-hstack-multiple-videos-side-by-side-with-avmutablevideocomposit
  to best support displaying in a grid + some of the later AVFoundation techniques.
  */
 
@@ -33,6 +33,7 @@ internal enum GridExportError: LocalizedError {
     case couldNotBuildGenerator
     case exportVideoCancelled
     case exportFailed(error: Error?)
+    case portraitNeedsFourVideos
     case unknownError
 
     var errorDescription: String? {
@@ -49,6 +50,8 @@ internal enum GridExportError: LocalizedError {
             return "The export operation was cancelled"
         case .exportFailed(let error):
             return "The export operation failed due to: \(error?.localizedDescription ?? "unknown error") \(error.debugDescription)"
+        case .portraitNeedsFourVideos:
+            return "Portrait exports require 4 video feeds"
         default:
             return "An unexpected error has occurred"
         }
@@ -60,6 +63,7 @@ internal enum GridExportOutputResolutionOption: String, Codable {
     case res1080p = "1080p"
     case res4K = "4K"
     case resDoubleLargest = "doubleLargest"
+    case resPortrait = "portrait"
 
     var desiredSize: CGSize? {
         switch self {
@@ -69,6 +73,8 @@ internal enum GridExportOutputResolutionOption: String, Codable {
             CGSize(width: 1920, height: 1080)
         case .res4K:
             CGSize(width: 3840, height: 2160)
+        case .resPortrait:
+            CGSize(width: 1080, height: 1920)
         default:
             nil
         }
@@ -109,6 +115,16 @@ internal struct AssetInfo {
     let compTrack: AVMutableCompositionTrack
 }
 
+extension Array where Element == AssetInfo {
+    var largestResolutionAsset: AssetInfo? {
+        self.sorted { (a: AssetInfo, b: AssetInfo) in
+            let resolutionA = a.assetTrack.resolution
+            let resolutionB = b.assetTrack.resolution
+            return (resolutionA.width * resolutionA.height) > (resolutionB.width * resolutionB.height)
+        }.first
+    }
+}
+
 internal class GridExportGenerator {
 
     var sendEventCallback: GridExportProgressEventCallback?
@@ -120,16 +136,12 @@ internal class GridExportGenerator {
     // 2 * width & height of HD footage
     static let EXPORT_SIZE = CGSize(width: 2560, height: 1920)
 
-    private func resolutionSizeFor(_ asset: AVAssetTrack) -> CGSize {
-        let size = asset.naturalSize.applying(asset.preferredTransform)
-        return CGSize(width: abs(size.width), height: abs(size.height))
-    }
-
     private func getAssetInfoFrom(
         _ filePath: String,
         composition: AVMutableComposition
     ) throws -> AssetInfo {
         let asset = AVURLAsset(url: URL(fileURLWithPath: filePath))
+        
         guard let track = composition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
             throw GridExportError.couldNotAddVideoTrack
         }
@@ -149,26 +161,110 @@ internal class GridExportGenerator {
         activeIndex: Int,
         totalCount: Int
     ) -> AVMutableVideoCompositionLayerInstruction {
-        let lInst = AVMutableVideoCompositionLayerInstruction(assetTrack: assetInfo.compTrack)
-        let resolution = assetInfo.assetTrack.resolution
-        let fittingResolution = resolution.boundsThatFit(parent: targetResolution)
+        let instruction = AVMutableVideoCompositionLayerInstruction(assetTrack: assetInfo.compTrack)
+        let fittingResolution = assetInfo.assetTrack.resolution.boundsThatFit(parent: targetResolution)
 
         let width: CGFloat = targetResolution.width
         let height: CGFloat = targetResolution.height
 
-        let scale = fittingResolution.1
+        let scale = fittingResolution.scale
 
-        let transform = CGAffineTransform(scaleX: scale, y: scale)
+        let transform = CGAffineTransform(scaleX: scale, y: scale).concatenating(
+            CGAffineTransform(
+                translationX: (activeIndex % 2 == 0 ? targetResolution.width - fittingResolution.size.width : 0) + (CGFloat(activeIndex % 2)*width),
+                y: activeIndex < 2 ? targetResolution.height - fittingResolution.size.height : height
+            )
+        )
 
-        if (activeIndex < 2) {
-            let t2 = transform.concatenating(CGAffineTransform(translationX: (activeIndex == 0 ? targetResolution.width - fittingResolution.0.width : 0) + (CGFloat(activeIndex)*width), y: targetResolution.height - fittingResolution.0.height))
-            lInst.setTransform(t2, at: CMTime.zero)
-        } else {
-            let t2 = transform.concatenating(CGAffineTransform(translationX: (activeIndex == 2 ? targetResolution.width - fittingResolution.0.width : 0) + (CGFloat(activeIndex - 2)*width), y: height))
-            lInst.setTransform(t2, at: CMTime.zero)
-        }
+        instruction.setTransform(transform, at: CMTime.zero)
+
+        return instruction
+    }
+
+    private func getPortraitInstructionFor(
+        assetInfo: AssetInfo,
+        videoSize: CGSize,
+        scale: CGFloat,
+        position: CGPoint
+    ) -> AVMutableVideoCompositionLayerInstruction {
+        let lInst = AVMutableVideoCompositionLayerInstruction(assetTrack: assetInfo.compTrack)
+
+        let transform = CGAffineTransform(scaleX: scale, y: scale).concatenating(CGAffineTransform(translationX: position.x, y: position.y))
+
+        lInst.setTransform(transform, at: CMTime.zero)
 
         return lInst
+    }
+
+    private func getRightVideoPortraitInstructionFor(
+        assetInfo: AssetInfo,
+        availableSpace: CGSize,
+        fullRenderSize: CGSize,
+        startingHeight: CGFloat
+    ) -> AVMutableVideoCompositionLayerInstruction {
+        let videoBounds = assetInfo.assetTrack.resolution.boundsThatFit(parent: availableSpace)
+
+        return getPortraitInstructionFor(
+            assetInfo: assetInfo,
+            videoSize: videoBounds.size,
+            scale: videoBounds.scale,
+            position: CGPoint(x: (fullRenderSize.width / 2) - videoBounds.size.width, y: startingHeight + ((availableSpace.height - videoBounds.size.height) / 2))
+        )
+    }
+
+    private func getLeftVideoPortraitInstructionFor(
+        assetInfo: AssetInfo,
+        availableSpace: CGSize,
+        fullRenderSize: CGSize,
+        startingHeight: CGFloat
+    ) -> AVMutableVideoCompositionLayerInstruction {
+        let videoBounds = assetInfo.assetTrack.resolution.boundsThatFit(parent: availableSpace)
+
+        return getPortraitInstructionFor(
+            assetInfo: assetInfo,
+            videoSize: videoBounds.size,
+            scale: videoBounds.scale,
+            position: CGPoint(x: fullRenderSize.width / 2, y: startingHeight + ((availableSpace.height - videoBounds.size.height) / 2))
+        )
+    }
+
+    private func getPortraitInstructionsWith(targetResolution: CGSize, assetInfos: [AssetInfo]) -> [AVMutableVideoCompositionLayerInstruction] {
+        let frontVideoBounds = assetInfos[0].assetTrack.resolution.boundsThatFit(parent: targetResolution)
+        let rearVideoBounds = assetInfos[3].assetTrack.resolution.boundsThatFit(parent: targetResolution)
+        let sideCameraSpace = CGSize(
+            width: targetResolution.width / 2,
+            height: targetResolution.height - frontVideoBounds.size.height - rearVideoBounds.size.height
+        )
+
+        let frontVideoInstruction = getPortraitInstructionFor(
+            assetInfo: assetInfos[0],
+            videoSize: frontVideoBounds.size,
+            scale: frontVideoBounds.scale,
+            position: CGPoint(x: 0, y: 0)
+        )
+
+        let rightVideoInstruction = getRightVideoPortraitInstructionFor(
+            assetInfo: assetInfos[1],
+            availableSpace: sideCameraSpace,
+            fullRenderSize: targetResolution,
+            startingHeight: frontVideoBounds.size.height
+        )
+
+        let leftVideoInstruction = getLeftVideoPortraitInstructionFor(
+            assetInfo: assetInfos[2],
+            availableSpace: sideCameraSpace,
+            fullRenderSize: targetResolution,
+            startingHeight: frontVideoBounds.size.height
+        )
+
+        let rearVideoInstruction = getPortraitInstructionFor(
+            assetInfo: assetInfos[3],
+            videoSize: rearVideoBounds.size,
+            scale: rearVideoBounds.scale,
+            position: CGPoint(x: 0, y: frontVideoBounds.size.height + sideCameraSpace.height)
+        )
+
+        return [frontVideoInstruction, rightVideoInstruction, leftVideoInstruction, rearVideoInstruction]
     }
 
     internal func exportAsGrid(
@@ -187,19 +283,12 @@ internal class GridExportGenerator {
 
             var targetResolution = exportOptions.resolution.desiredSize ?? GridExportGenerator.EXPORT_SIZE
 
-            if (exportOptions.resolution == .resDoubleLargest) {
-                targetResolution = assetInfos.sorted { (a: AssetInfo, b: AssetInfo) in
-                    let resolutionA = a.assetTrack.resolution
-                    let resolutionB = b.assetTrack.resolution
-                    return (resolutionA.width * resolutionA.height) > (resolutionB.width * resolutionB.height)
-                }.first?.assetTrack.resolution.doubled ?? GridExportGenerator.EXPORT_SIZE
+            if exportOptions.resolution == .resDoubleLargest {
+                targetResolution = assetInfos.largestResolutionAsset?.assetTrack.resolution.doubled ?? GridExportGenerator.EXPORT_SIZE
             }
 
             let stackComposition = AVMutableVideoComposition()
-            stackComposition.renderSize = CGSize(
-                width: targetResolution.width,
-                height: targetResolution.height
-            )
+            stackComposition.renderSize = targetResolution
 
             let baseFPS = assetInfos.first?.assetTrack.nominalFrameRate
             let baseScale = assetInfos.first?.assetTrack.naturalTimeScale
@@ -209,11 +298,21 @@ internal class GridExportGenerator {
                 preferredTimescale: baseScale ?? 600
             )
 
-            var i = 0
-            let instructions: [AVMutableVideoCompositionLayerInstruction] = assetInfos.map {
-                let instruction = getInstructionFrom($0, targetResolution: targetResolution.halfed, activeIndex: i, totalCount: assetInfos.count)
-                i += 1
-                return instruction
+            var instructions: [AVMutableVideoCompositionLayerInstruction] = []
+
+            if exportOptions.resolution == .resPortrait {
+                guard assetInfos.count == 4 else {
+                    throw GridExportError.portraitNeedsFourVideos
+                }
+                
+                instructions = getPortraitInstructionsWith(targetResolution: targetResolution, assetInfos: assetInfos)
+            } else {
+                var i = 0
+                instructions = assetInfos.map {
+                    let instruction = getInstructionFrom($0, targetResolution: targetResolution.halfed, activeIndex: i, totalCount: assetInfos.count)
+                    i += 1
+                    return instruction
+                }
             }
 
             let inst = AVMutableVideoCompositionInstruction()
@@ -287,7 +386,7 @@ internal class GridExportGenerator {
             return
         }
 
-        if (hasListeners) {
+        if hasListeners {
             let results = GridExportProgressEvent(progress: progress)
             self.sendEventCallback?(
                 EventKeys.GridExportProgressKey,
