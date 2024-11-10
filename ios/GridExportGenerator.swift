@@ -61,6 +61,7 @@ internal enum GridExportError: LocalizedError {
 internal enum GridExportOutputResolutionOption: String, Codable {
     case res720p = "720p"
     case res1080p = "1080p"
+    case res2k = "2K"
     case res4K = "4K"
     case resDoubleLargest = "doubleLargest"
     case resPortrait = "portrait"
@@ -71,12 +72,27 @@ internal enum GridExportOutputResolutionOption: String, Codable {
             CGSize(width: 1280, height: 720)
         case .res1080p:
             CGSize(width: 1920, height: 1080)
+        case .res2k:
+            CGSize(width: 2560, height: 1440)
         case .res4K:
             CGSize(width: 3840, height: 2160)
         case .resPortrait:
             CGSize(width: 1080, height: 1920)
         default:
             nil
+        }
+    }
+
+    var exportPreset: String {
+        switch self {
+        case .res720p:
+            return AVAssetExportPreset1280x720
+        case .res1080p:
+            return AVAssetExportPreset1920x1080
+        case .res4K:
+            return AVAssetExportPreset3840x2160
+        default:
+            return AVAssetExportPresetHighestQuality
         }
     }
 }
@@ -316,7 +332,9 @@ internal class GridExportGenerator {
             }
 
             let inst = AVMutableVideoCompositionInstruction()
-            inst.timeRange = CMTimeRange(start: CMTime.zero, duration: CMTime(seconds: exportOptions.duration * 600, preferredTimescale: 600))
+            inst.timeRange = CMTimeRange(
+                start: CMTime.zero,
+                duration: CMTime(seconds: exportOptions.duration * 600, preferredTimescale: baseScale ?? 600))
             inst.layerInstructions = instructions
 
             stackComposition.instructions = [inst]
@@ -328,7 +346,7 @@ internal class GridExportGenerator {
                 try FileManager.default.removeItem(atPath: docPath)
             }
 
-            guard let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            guard let exporter = AVAssetExportSession(asset: composition, presetName: exportOptions.resolution.exportPreset) else {
                 throw GridExportError.couldNotBuildGenerator
             }
 
