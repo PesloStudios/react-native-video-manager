@@ -103,6 +103,9 @@ internal struct GridExportOptions: Codable {
     var fileName: String = "grid_export"
     var duration: Double = 0
     var resolution: GridExportOutputResolutionOption = .resDoubleLargest
+    var timestamp: String?
+    var latitude: String?
+    var longitude: String?
 
     /// Initialises a config object, with the given dictionary payload.
     /// - Parameter rawValue: A dictionary options payload, provided by the JS layer.
@@ -350,6 +353,11 @@ internal class GridExportGenerator {
                 throw GridExportError.couldNotBuildGenerator
             }
 
+            exporter.metadata = MetadataUtils.buildMetadata(
+                timestamp: exportOptions.timestamp,
+                latitude: exportOptions.latitude,
+                longitude: exportOptions.longitude
+            )
             exporter.outputURL = writeURL
             exporter.videoComposition = stackComposition
             exporter.outputFileType = .mp4

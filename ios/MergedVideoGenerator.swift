@@ -48,6 +48,10 @@ internal struct MergedVideoOptions: Codable {
     var fileName: String = "merged_video"
     var ignoreSound: Bool = false
 
+    var timestamp: String?
+    var latitude: String?
+    var longitude: String?
+
     /// Initialises a config object, with the given dictionary payload.
     /// - Parameter rawValue: A dictionary options payload, provided by the JS layer.
     /// - Throws: An error if the options aren't provided, or if typing of the payload is incorrect.
@@ -138,6 +142,11 @@ internal class MergedVideoGenerator {
                 throw MergedVideoError.couldNotBuildGenerator
             }
 
+            exporter.metadata = MetadataUtils.buildMetadata(
+                timestamp: mergeOptions.timestamp,
+                latitude: mergeOptions.latitude,
+                longitude: mergeOptions.longitude
+            )
             exporter.outputURL = writeURL
             exporter.outputFileType = .mp4
 

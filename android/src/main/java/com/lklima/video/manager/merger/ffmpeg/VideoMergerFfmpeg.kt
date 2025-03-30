@@ -37,7 +37,9 @@ class VideoMergerFfmpeg(private val context: Context) : VideoMerger {
                 videoPaths = videoFiles.map { uri ->
                     uri.safePathForRead()
                 },
-                output = outputFile.toString()
+                output = outputFile.toString(),
+                latitude = options.latitude,
+                longitude = options.longitude
             )
             val session = FFmpegKit.execute(command)
             val returnCode = session.returnCode
@@ -54,10 +56,10 @@ class VideoMergerFfmpeg(private val context: Context) : VideoMerger {
         }
     }
 
-    private fun createCommand(videoPaths: List<String>, output: String): String {
+    private fun createCommand(videoPaths: List<String>, output: String, latitude: String, longitude: String): String {
         val listFilePath: String = generateVideoFileList(videoPaths)
         Log.d(TAG, "output=${output}")
-        return "-f concat -protocol_whitelist saf,file,crypto -safe 0 -i $listFilePath -c copy $output"
+        return "-f concat -protocol_whitelist saf,file,crypto -safe 0 -i $listFilePath -metadata location=\"$latitude $longitude 0\" -c copy $output"
     }
 
     private fun generateVideoFileList(inputs: List<String>): String = run {

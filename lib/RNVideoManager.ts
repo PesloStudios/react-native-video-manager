@@ -26,6 +26,9 @@ interface MergeOptions {
   writeDirectory?: string;
   fileName?: string;
   ignoreSound?: boolean
+  timestamp?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 export type GridExportResolutionOption = "720p" | "1080p" | "2K" | "4K" | "doubleLargest" | "portrait"
@@ -34,7 +37,10 @@ interface GridExportOptions {
   writeDirectory: string;
   fileName: string;
   duration: number;
-  resolution: GridExportResolutionOption
+  resolution: GridExportResolutionOption;
+  timestamp?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 interface ThumbnailOptions {
