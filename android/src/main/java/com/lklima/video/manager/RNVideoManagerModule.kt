@@ -43,7 +43,9 @@ class RNVideoManagerModule(
         scope.launch(Dispatchers.Main) {
             val files = buildList {
                 for (i in 0 until fileNames.size()) {
-                    add(fileNames.getString(i))
+                    fileNames.getString(i)?.let { fileName ->
+                        add(fileName)
+                    }
                 }
             }
             VideoMetadataExtractor(reactContext).getVideoMetadataFor(
@@ -96,7 +98,9 @@ class RNVideoManagerModule(
             runCatching {
                 val files = buildList {
                     for (index in 0 until videoFiles.size()) {
-                        add(videoFiles.getString(index))
+                        videoFiles.getString(index)?.let { fileName ->
+                            add(fileName)
+                        }
                     }
                 }
                 val uriSanitizer = UriSanitizer()
