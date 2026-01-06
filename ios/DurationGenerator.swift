@@ -16,11 +16,13 @@ internal struct GetDurationResult {
 internal struct VideoMetadata {
     let duration: Double
     let playable: Bool
+    let frameRate: Double
 
     func asDictionary() -> [AnyHashable: Any] {
         [
             "duration": duration,
-            "playable": playable
+            "playable": playable,
+            "frameRate": frameRate
         ]
     }
 }
@@ -44,7 +46,7 @@ internal struct DurationGenerator {
         let asset = AVAsset(url: URL(fileURLWithPath: fileName))
         let duration = CMTimeGetSeconds(asset.duration)        
         let isPlayable = asset.isPlayable
-        
+
         return GetDurationResult(duration: duration, playable: isPlayable)
     }
 
@@ -61,9 +63,12 @@ internal struct DurationGenerator {
                     let duration = CMTimeGetSeconds(asset.duration)
                     let isPlayable = asset.isPlayable
 
+                    let framerate = asset.tracks(withMediaType: .video).first?.nominalFrameRate ?? 0
+
                     metadata[fileName] = VideoMetadata(
                         duration: duration,
-                        playable: isPlayable
+                        playable: isPlayable,
+                        frameRate: Double(framerate)
                     )
                 }
             })

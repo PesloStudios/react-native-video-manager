@@ -14,6 +14,7 @@ interface GridExportResponse {
 interface DurationResponse {
   duration: number;
   playable: boolean;
+  frameRate: number;
 }
 
 type MetadataResponse = Record<string, DurationResponse>
@@ -68,9 +69,9 @@ export async function exportAsGrid(videos: string[], options?: GridExportOptions
 }
 
 export async function getDurationFor(video: string): Promise<DurationResponse> {
-  const { duration, playable }: DurationResponse = await RNVideoManager.getDurationFor(video);
+  const { duration, playable, frameRate }: DurationResponse = await RNVideoManager.getDurationFor(video);
 
-  return { duration, playable }
+  return { duration, playable, frameRate }
 }
 
 // TODO: Test how Android handles corrupted video files
